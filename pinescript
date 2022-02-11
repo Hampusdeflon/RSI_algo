@@ -1,0 +1,65 @@
+//@version=4
+strategy(" RSI Algo 🤖 ", overlay = true, pyramiding = 10, currency = currency.USD, initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, commission_type = strategy.commission.percent, commission_value = 0)
+
+
+
+//get user input
+//stoch
+kInput  = input(title="K Length", type= input.integer, defval=14)
+dInput  = input(title="D Length", type= input.integer, defval=3)
+//rsi
+rsiLength = input(title="RSI Length", type=input.integer,defval=11)
+obLevel = input(title="Overbought Threshold", type= input.float, defval=84)
+osLevel = input(title="Oversold Threshold", type= input.float, defval=30)
+
+//calc stoch & RSI
+// 100 x (C - L14) /(H14 - L(k)14)
+k = 100 * ((close - lowest(low, kInput)) / (highest(high, kInput) - lowest(low, kInput)))
+d = sma(k, dInput) 
+rsi = rsi(close, rsiLength)
+//conditions
+oversold   = rsi >= obLevel
+overbought = rsi <= osLevel
+
+//longCondition = overbought and overbought[2] and not overbought[3]
+//sellCondition = oversold and oversold[2] and not oversold[3]
+longCondition = (rsi >= osLevel) and overbought[2] and not overbought[3]
+sellCondition = (rsi <= obLevel) and oversold[2] and not oversold[3]
+//buy / sell
+
+
+
+
+//strategy.entry(id = 'Long', when = longCondition, long = ,)
+//strategy.entry(id = 'Short', when = sellCondition, long = true)
+
+//strategy.close("long", when = sellCondition)
+//strategy.close("Short", when = longCondition)
+
+
+//draw data to chart
+//plot(rsi, color= oversold ? color.red : overbought ? color.green : color.black,linewidth=2, title="RSI")
+//plot(k, color=color.purple, title="K")
+//plot(d, color=color.orange, title="D")
+//plot(obLevel, color=color.red,linewidth=2, title="Overbought")
+//plot(osLevel, color=color.green,linewidth=2, title="Oversold")
+
+plot(sma(close,200), color=#787987, linewidth = 2,transp = 0)
+plot(sma(close,50),  color=#c9beaa, linewidth=2, transp = 0)
+
+
+Long = (overbought and overbought[2] and not overbought[3]) 
+Sell = (oversold and oversold[1] and not oversold[2])
+
+//  plot
+plotshape( Long ? 1  : na, style = shape.triangleup, color=color.green, location=  location.belowbar, title="Bullish Signal", size = size.normal )
+plotshape( Sell   ? 1 : na, style = shape.triangledown, color=color.red, location=  location.abovebar, title="Bearish Signal", size = size.normal  )
+
+//  entry/sell
+if Long
+    strategy.entry("buy", strategy.long, 1)
+if Sell
+    strategy.entry("sell", strategy.short, 1)
+
+alertcondition(Long or Sell, title="RSI Signal on {{ticker}}", message="RSI signal detected for {{ticker}}, at {{time}}, price: {{close}} ")
+
